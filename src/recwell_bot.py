@@ -21,11 +21,13 @@ while True:
         curr_occupancy = checkOccupancy()
         update_naptime += 1
 
-        if curr_occupancy <= 95 and update_naptime == TWEET_LIMITER:
-            handleUpdates(api, curr_occupancy)
-            update_naptime = 0
-        
-        handleMentions(api, curr_occupancy)
+        # checkOccupancy returns -1 if exception occurs
+        if curr_occupancy > 0:
+            if curr_occupancy <= 95 and update_naptime == 1:
+                handleUpdates(api, curr_occupancy)
+                update_naptime = 0
+            
+            handleMentions(api, curr_occupancy)
         print('sleeping...')
         time.sleep(REST)
     except tweepy.RateLimitError:
