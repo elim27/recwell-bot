@@ -1,5 +1,11 @@
 import tweepy
 
+# This functions handles posting new Tweets based on the current capacity
+# of The Nick. Is only called in recwell_bot during open hours and if the
+# capacity is at an accetable threshold (<= 95%)
+# PARAMS:
+# api: api object that gives access to Twitter's REST API methods
+# curr_occupancy: current occupancy of The Nick as an integer
 def handleUpdates(api, curr_occupancy):
     try:
         curr_percent = 'Current Occupancy: ' + str(curr_occupancy) + '%'
@@ -16,9 +22,8 @@ def handleUpdates(api, curr_occupancy):
             api.update_status('Nice.\n' + curr_percent)
         elif curr_occupancy <= 70:
             api.update_status('Nope! This would be an excellent time to go\n'
-                            + curr_percent)   
+                            + curr_percent)  
+        print('Tweet posted!') 
     except tweepy.TweepError as e:
         print('Error, tweeting updates...')
         print(e.reason)
-
- 
