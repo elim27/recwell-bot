@@ -54,7 +54,7 @@ def novelTweet(api, curr_occupancy, curr_percent):
 # api: api object that gives access to Twitter's REST API methods
 # curr_occupancy: current occupancy of The Nick as an integer
 # curr_percent: current occupancy percentage as a string
-def basciTweet(api, curr_occupancy, curr_percent):
+def basicTweet(api, curr_occupancy, curr_percent):
     if 90 < curr_occupancy <= 95:
         api.update_status('Nope!\n' + curr_percent) 
     elif 80 < curr_occupancy <= 90:
