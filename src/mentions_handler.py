@@ -1,10 +1,10 @@
 import tweepy
 from decouple import config
 
-
 FILE_NAME = config('FILE_NAME')
 SCREEN_NAME = config('SCREEN_NAME')
 BANNED_WORDS = []
+
 # Function that reads from last_id.txt file to retrieve the ID 
 # of the last tweet that mentioned the bot
 def getLastID(file_name):
@@ -30,33 +30,55 @@ def storeLastID(file_name, last_id):
     except FileNotFoundError:
         print(FILE_NAME + ' not found :(')
     
-
+# Function initializes BANNED_WORDS dictionary from words defined
+# in .env
 def setupBannedWords():
     word_list = config('BANNED_WORDS', cast=str).split(',')
     for word in word_list:
         BANNED_WORDS.append(word)
 
-def capHandler(api, tweet, curr_occupancy):
+# Function handles response if user mentions but with '#full'
+# If the occupancy is at 100%, the bot responds 'Yes.', if an
+# error occurs in scraping (curr_occupancy = -1), 
+#  otherwise it responds 'Nope!' with the current occupancy
+def fullHandler(api, tweet, curr_occupancy):
     try:
         curr_percent = 'Current Occupancy: ' + str(curr_occupancy) + '%'
 
         if curr_occupancy == 100:
             api.update_status('@' + tweet.user.screen_name + 'Yes. \U0001F61E\n'
                             + curr_percent, in_reply_to_status_id=tweet.id)
+        elif curr_occupancy == -1:
+            api.update_status('@' + tweet.user.screen_name + 'Uh oh, it '
+                            + 'seems like I can\'t get that info right now. '
+                            + 'My source is probably down.\n'
+                            + 'Try this alternate link!', 
+                            attachment_url='https://recwell.wisc.edu/liveusage/',
+                            in_reply_to_status_id=tweet.id)
         else:
             api.update_status('@' + tweet.user.screen_name + 'Nope! \U0001F601\n'
                             + curr_percent, in_reply_to_status_id=tweet.id)
-        print('Response to #cap successful!')
+        print('Response to #full successful!')
     except tweepy.TweepError as e:
-        print('Response to #cap failed!')
+        print('Response to #full failed!')
         print(e.reason)
+
+# This function takes care of favoriting tweets
+# that compliment the bot with the phrase 'good bot'
+def favHandler(api, tweet):
+    try:
+        api.create_favorte(tweet.id)
+        print('favorite successful')
+    except:
+        print('favorite failed!')
 
 def handleMentions(api, curr_occupancy):
     print('handleMentions() called')
     setupBannedWords()
     last_id = getLastID(FILE_NAME)
     mentions = api.mentions_timeline(last_id, tweet_mode='extended')
-
+    
+    # Responds to tweets from oldest to newest
     for tweet in reversed(mentions):
         print('Reading tweets...')
         print(str(tweet.id))
@@ -66,10 +88,12 @@ def handleMentions(api, curr_occupancy):
 
         # Make sure the bot doesn't respond to its own tweets
         #Ensure the bot doesn't respond to words that are in BANNED_WORDS
-        if SCREEN_NAME not in tweet.user.screen_name and 
-                        any(word not in tweet_text for word in BANNED_WORDS):
-                if '#cap' in tweet_text:
-                    capHandler(api, tweet, curr_occupancy)
+        if (SCREEN_NAME not in tweet.user.screen_name and 
+                        any(word not in tweet_text for word in BANNED_WORDS)):
+                if '#full' in tweet_text:
+                    fullHandler(api, tweet, curr_occupancy)
+                if 'good bot' in tweet_text:
+                    favHandler(api, tweet)
         else:
             print('Tweet ignored.')
                 
