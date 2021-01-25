@@ -24,7 +24,7 @@ def checkOccupancy():
         print('Error in checkOccupancy()')
         occupancy_num = -1
 
-    print('curr occupancy: ' + str(occupancy_num))
+    print('Curr occupancy: ' + str(occupancy_num) + '%')
     return int(occupancy_num)
 
 # This function is the "back up" to checkOccupancy
