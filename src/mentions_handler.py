@@ -1,9 +1,10 @@
 import tweepy
 from decouple import config
 
-FILE_NAME = config('FILE_NAME')
+FILE_NAME = config('FILE_NAME', cast=str)
 SCREEN_NAME = config('SCREEN_NAME')
 BANNED_WORDS = []
+SEEN_IDS = []
 
 # Function that reads from last_id.txt file to retrieve the ID 
 # of the last tweet that mentioned the bot
@@ -72,12 +73,24 @@ def favHandler(api, tweet):
     except:
         print('favorite failed!')
 
+# Function that handles responding to tweets that mention the bot and 
+# use a specific hashtag or phrase. Saves Tweet ID into a text file (last_id.txt) 
+# so it won't handle tweets it has already interacted with (won't violate
+# Twitter's spam policy either)
+# Possible #'s:
+# - #full: responds yes or no to whether The Nick is full or not and provides current
+#               occupancy
+# - 'good bot': likes the tweet
 def handleMentions(api, curr_occupancy):
     print('handleMentions() called')
     setupBannedWords()
     last_id = getLastID(FILE_NAME)
-    mentions = api.mentions_timeline(last_id, tweet_mode='extended')
-    
+    try:
+        mentions = api.mentions_timeline(last_id, tweet_mode='extended')
+    except tweepy.TweepError:
+        print('Error, unable to get mentions')
+        return
+
     # Responds to tweets from oldest to newest
     for tweet in reversed(mentions):
         print('Reading tweets...')
@@ -87,7 +100,7 @@ def handleMentions(api, curr_occupancy):
         tweet_text = tweet.full_text.lower()
 
         # Make sure the bot doesn't respond to its own tweets
-        #Ensure the bot doesn't respond to words that are in BANNED_WORDS
+        # Ensure the bot doesn't respond to words that are in BANNED_WORDS
         if (SCREEN_NAME not in tweet.user.screen_name and 
                         any(word not in tweet_text for word in BANNED_WORDS)):
                 if '#full' in tweet_text:
