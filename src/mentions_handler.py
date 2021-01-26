@@ -57,13 +57,12 @@ def fullHandler(api, tweet, curr_occupancy):
         curr_percent = 'Current Occupancy: ' + str(curr_occupancy) + '%'
 
         if curr_occupancy == 100:
-            api.update_status('@' + tweet.user.screen_name + ' Yes. \U0001F61E\n'
+            api.update_status('@' + tweet.user.screen_name + ' Yes. \U0001F614\n'
                             + curr_percent, in_reply_to_status_id=tweet.id)
         elif curr_occupancy == -1:
             api.update_status('@' + tweet.user.screen_name + ' Uh oh, it '
-                            + 'seems like I can\'t get that info right now. '
-                            + 'My source is probably down.\n'
-                            + 'Try this alternate link!', 
+                            + 'seems like my source is currently down '
+                            + '\U0001F62C \U0001F6E0\n Try this alternate link!', 
                             attachment_url='https://recwell.wisc.edu/liveusage/',
                             in_reply_to_status_id=tweet.id)
         else:
@@ -134,14 +133,15 @@ def handleMentions(api, curr_occupancy, open):
         # Make sure the bot doesn't respond to its own tweets
         # Ensure the bot doesn't respond to words that are in BANNED_WORDS
         # Make sure The Nick is open and not closed
-        if (SCREEN_NAME not in tweet.user.screen_name and open and
+        if (SCREEN_NAME not in tweet.user.screen_name and
                         any(word not in tweet_text for word in BANNED_WORDS)):
+            if open:
                 if '#full' in tweet_text:
                     fullHandler(api, tweet, curr_occupancy)
                 if 'good bot' in tweet_text:
                     favHandler(api, tweet)
-        elif not open:
-            closedHandler(api, tweet)
+            else:
+                closedHandler(api, tweet)
         else:
             print('Tweet ignored')
 
