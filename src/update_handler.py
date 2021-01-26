@@ -18,7 +18,7 @@ def handleUpdates(api, curr_occupancy, DAILY_TOTAL):
     curr_percent = ('Current Occupancy: ' + str(curr_occupancy) + '%\n'
                     + 'Daily Update #' + str(DAILY_TOTAL))
     try:
-        if 90 < curr_occupancy <= 100:
+        if 90 < curr_occupancy <= 95:
             api.update_status('Nope! But close to full, hurry over! ' 
                             + '\U0001F3C3\n' + curr_percent) 
         elif 80 < curr_occupancy <= 90:
