@@ -4,7 +4,7 @@ import pytz
 from enum import Enum
 from datetime import datetime
 from decouple import config
-from update_handler import handleUpdates
+from update_handler import handleUpdates, handleClosedUpdate, handleOpenUpdate
 from profile_handler import handleClosedProfile, handleOpenProfile
 from mentions_handler import handleMentions
 from recwell_scrape import checkOccupancy
@@ -25,22 +25,22 @@ class Opening(Enum):
     Tuesday = 6
     Wednesday = 6
     Thursday = 6
-    Friday = 8
-    Saturday = 8
-    Sunday = 6
+    Friday = 6
+    Saturday = 10
+    Sunday = 10
 
 # Enumerators containing the respective closing hours
 # in 24 hour time (no leading 0). Used Enums for
 # readability
 # Spring 2021 schedule
 class Closing(Enum):    
-    Monday = 22
-    Tuesday = 22
-    Wednesday = 22
-    Thursday = 22
+    Monday = 20
+    Tuesday = 20
+    Wednesday = 20
+    Thursday = 20
     Friday = 20
-    Saturday = 20
-    Sunday = 22
+    Saturday = 18
+    Sunday = 18
 
 # GLOBAL VARS
 # IS_OPEN: True if operating during Open Hours, False otherwise
@@ -49,11 +49,14 @@ class Closing(Enum):
 # UPDATED_OPEN: True if profile has been updated to open
 # UPDATED_CLOSE: True if profile has been updated to close
 # OPENING_HOURS: List of Enum values that correspond to opening and closing hours
+# DAILY_TOTAL: Keeps track of total number of tweets posted in a day. 
+#                Used to circumvent duplicate status error. Reset to 0 at close
 IS_OPEN = None
 UPDATED_OPEN = False
 UPDATED_CLOSE = False
 REST = 15
 TWEET_LIMITER =  4 * 10
+DAILY_TOTAL = 0
 OPENING_HOURS = [
                 Opening.Monday.value, 
                 Opening.Tuesday.value, 
@@ -98,6 +101,7 @@ def openSetup():
     global IS_OPEN, UPDATED_OPEN, UPDATED_CLOSE
     IS_OPEN = True
     if not UPDATED_OPEN:
+        handleOpenUpdate(api)
         handleOpenProfile(api)
         UPDATED_OPEN = True
         UPDATED_CLOSE = False # reset for close update later
@@ -105,12 +109,13 @@ def openSetup():
 # Function that setups globals for close hours and updates the
 # profile to convey The Nick is closed (only updates profile once)
 def closedSetup():
-    global IS_OPEN, UPDATED_OPEN, UPDATED_CLOSE
+    global IS_OPEN, UPDATED_OPEN, UPDATED_CLOSE, DAILY_TOTAL
     IS_OPEN = False
-    print('Closed :(')
     if not UPDATED_CLOSE:
         UPDATED_CLOSE = True
         UPDATED_OPEN = False # reset for open update later
+        DAILY_TOTAL = 0
+        handleClosedUpdate(api)
         handleClosedProfile(api)
 
 # This loop will control when the bot updates statuses, creates favorites, etc. by
@@ -119,6 +124,7 @@ def closedSetup():
 
 #       Endpoint       | Rate limit window | Rate limit per user
 # POST statuses/update |       3 hours     |        300
+
 # POST favorites/create|       3 hours     |        1000
 # 900 requests / 15 Minutes
 #
@@ -130,25 +136,31 @@ while True:
         curr_hour = getCurrHour()
         curr_day = getCurrDay()
         # Operates normally during The Nick's open and close hours
-        if OPENING_HOURS[curr_day] < curr_hour < CLOSING_HOURS[curr_day]:
+        if OPENING_HOURS[curr_day] <= curr_hour <= CLOSING_HOURS[curr_day]:
+            curr_occupancy = checkOccupancy()
             openSetup()
             update_naptime += 1
-            curr_occupancy = checkOccupancy()
             # checkOccupancy returns -1 if exception occurs
-            if curr_occupancy > 0:
+            if curr_occupancy >= 0:
                 # if the current capacity is under acceptable threshold (95%)
                 # and it's been 10 minutes
-                if curr_occupancy <= 95 and update_naptime == 1:
-                    handleUpdates(api, curr_occupancy)
+                if curr_occupancy <= 95 and update_naptime == TWEET_LIMITER:
+                    DAILY_TOTAL += 1
+                    handleUpdates(api, curr_occupancy, DAILY_TOTAL)
                     update_naptime = 0
+            
+            handleMentions(api, curr_occupancy, IS_OPEN)
         # If outside of open hours, will not post new updates and
         # responds to mentions with special response
         else:
-           closedSetup()
+            closedSetup()
+            handleMentions(api, 0, IS_OPEN)
 
-        handleMentions(api, curr_occupancy, IS_OPEN)
         print('sleeping...')
         time.sleep(REST)
     except tweepy.RateLimitError:
+        print('Rate Limit Exceeded')
+        print('Extended sleep...')
         time.sleep(REST * 60)
+
 
