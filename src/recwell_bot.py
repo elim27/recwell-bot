@@ -24,6 +24,7 @@ class Opening(Enum):
     Monday = 6
     Tuesday = 6
     Wednesday = 6
+
     Thursday = 6
     Friday = 6
     Saturday = 10
@@ -47,7 +48,11 @@ class Closing(Enum):
 # REST: Duration of sleep (15s)
 # TWEET_LIMITER: 
 # UPDATED_OPEN: True if profile has been updated to open
+#               default is True to prevent unwanted updates
+#               when redeploying/restarting container
 # UPDATED_CLOSE: True if profile has been updated to close
+#               default is True to prevent unwanted updates
+#               when redploying/restarting container
 # OPENING_HOURS: List of Enum values that correspond to opening and closing hours
 # DAILY_TOTAL: Keeps track of total number of tweets posted in a day. 
 #                Used to circumvent duplicate status error. Reset to 0 at close
@@ -84,7 +89,7 @@ def getCurrHour():
     # leading to an empty string
     if not curr_hour:
         curr_hour = 0
-    print('current 24 hour: ' + str(curr_hour))
+    # print('current 24 hour: ' + str(curr_hour))
     return int(curr_hour)
 
 # Function that get the current weekday in integer form
@@ -92,7 +97,6 @@ def getCurrHour():
 # RETURN: Current weekday as integer
 def getCurrDay():
     curr_day = datetime.today().weekday()
-    print('current weekday: ' + str(curr_day))
     return int(curr_day)
 
 # Function that setups globals for open hours and updates the
@@ -136,27 +140,23 @@ while True:
         curr_hour = getCurrHour()
         curr_day = getCurrDay()
         # Operates normally during The Nick's open and close hours
-        if OPENING_HOURS[curr_day] <= curr_hour <= CLOSING_HOURS[curr_day]:
+        if OPENING_HOURS[curr_day] <= curr_hour < CLOSING_HOURS[curr_day]:
             curr_occupancy = checkOccupancy()
             openSetup()
             update_naptime += 1
             # checkOccupancy returns -1 if exception occurs
-            if curr_occupancy >= 0:
-                # if the current capacity is under acceptable threshold (95%)
-                # and it's been 10 minutes
-                if curr_occupancy <= 95 and update_naptime == TWEET_LIMITER:
-                    DAILY_TOTAL += 1
-                    handleUpdates(api, curr_occupancy, DAILY_TOTAL)
-                    update_naptime = 0
-            
+            # if the current capacity is under acceptable threshold (95%)
+            # and it's been 10 minutes
+            if 0 <= curr_occupancy <= 95 and update_naptime == TWEET_LIMITER:
+                DAILY_TOTAL += 1
+                handleUpdates(api, curr_occupancy, DAILY_TOTAL)
+                update_naptime = 0
             handleMentions(api, curr_occupancy, IS_OPEN)
         # If outside of open hours, will not post new updates and
         # responds to mentions with special response
         else:
             closedSetup()
             handleMentions(api, 0, IS_OPEN)
-
-        print('sleeping...')
         time.sleep(REST)
     except tweepy.RateLimitError:
         print('Rate Limit Exceeded')
