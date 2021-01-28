@@ -2,10 +2,44 @@ import tweepy
 import random
 from decouple import config
 
+FILE_NAME = config('FILE_NAME_DAY')
 FILE_PATH_CLOSED = config('CLOSED_PATH')
 FILE_PATH_OPEN = config('OPEN_PATH')
 CLOSED_NAMES = []
 OPEN_NAMES = []
+
+# Function that reads from curr_day.txt file to retrieve the
+# current day # and avoid Twitter duplicate status violations
+# PARAMS:
+# file_name: path to file where day # is stored
+# RETURN: day #
+def getDay(file_name):
+    last_id = 0
+    try:
+        fr = open(file_name, 'r')
+        last_id = int(fr.read().strip())           
+        fr.close()
+    except ValueError:
+        last_id = 0
+    except FileNotFoundError:
+        print('FileNotFoundError :(')
+
+    return last_id
+
+# Funciton that writes to curr_day.txt file to save the
+# incremented day @
+# PARAMS:
+# file_name: path to file where day # is stored
+# last_id: day #
+def storeDay(file_name, last_id):
+    try:
+        fw = open(file_name, 'w')
+        fw.write(str(last_id))
+        fw.close()
+    except FileNotFoundError:
+        print(FILE_NAME + ' not found :(')
+    except:
+        print('error in storeLastID')
 # This functions handles posting new Tweets based on the current capacity
 # of The Nick. Is only called in recwell_bot during open hours and if the
 # capacity is at an accetable threshold (<= 95%)
@@ -50,9 +84,9 @@ def handleOpenUpdate(api):
     file_name = openFileName()
     try:
         path_to_file = FILE_PATH_OPEN + file_name
-        print(path_to_file)
         api.update_with_media(filename=path_to_file, 
-                        status='The Nick is open! \U0001F64C')
+                        status='The Nick is open! Day #' 
+                        + str(getDay(FILE_NAME)) + ' \U0001F64C')
         print('Open update successful!')
     except tweepy.TweepError:
         print('Error with open update')
@@ -73,6 +107,9 @@ def handleClosedUpdate(api):
         path_to_file = FILE_PATH_CLOSED + file_name
         api.update_with_media(filename=path_to_file, 
                         status='The Nick is now closed. \U0000270C')
+        # increment the day counter at close and store
+        # into the the file
+        storeDay(FILE_NAME, getDay(FILE_NAME) + 1)
         print('Closed update successful!')
     except tweepy.TweepError:
         print('Error with closed update')
