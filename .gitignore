@@ -1,5 +1,5 @@
 # stores the ID of last tweet seen
-last_id.txt
+/var/
 res/gifs/
 # Byte-compiled / optimized / DLL files
 __pycache__/
