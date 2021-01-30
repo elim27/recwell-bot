@@ -1,7 +1,0 @@
-version: "3.9"
-services:
-  web:
-    image: elim27/thenick-bot
-    container_name: test-azure-v1
-    env_file:
-    - .env
