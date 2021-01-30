@@ -1,5 +1,7 @@
 import tweepy
 import random
+import pytz
+from datetime import datetime
 from decouple import config
 
 FILE_NAME = config('FILE_NAME_DAY')
@@ -22,6 +24,7 @@ def getDay(file_name):
     except ValueError:
         last_id = 0
     except FileNotFoundError:
+        print('Error in getDay')
         print('FileNotFoundError :(')
 
     return last_id
@@ -37,20 +40,31 @@ def storeDay(file_name, last_id):
         fw.write(str(last_id))
         fw.close()
     except FileNotFoundError:
+        print('Error in storeDay')
         print(FILE_NAME + ' not found :(')
-    except:
-        print('error in storeLastID')
+
+# Function that gets the current time (in CST)
+# and returns it so it can't be used in status
+# updates.
+# RETURN: the current time
+def getTime():
+    CST = pytz.timezone('US/Central')
+    curr_time = datetime.today().astimezone(CST).strftime('%I:%M %p').lstrip('0')
+    print('Current Time: ' + curr_time)
+    return curr_time
+ 
 # This functions handles posting new Tweets based on the current capacity
 # of The Nick. Is only called in recwell_bot during open hours and if the
 # capacity is at an accetable threshold (<= 95%)
 # PARAMS:
 # api: api object that gives access to Twitter's REST API methods
 # curr_occupancy: current occupancy of The Nick as an integer
-# DAILY_TOTAL: keeps track of how many updates were given on the day and
+# DAILY_UPDATE: keeps track of how many updates were given on the day and
 #               appends to Tweet. This circumvents duplicate statuses
-def handleUpdates(api, curr_occupancy, DAILY_TOTAL):
+def handleUpdates(api, curr_occupancy):
+    curr_time = getTime()
     curr_percent = ('Current Occupancy: ' + str(curr_occupancy) + '%\n'
-                    + 'Daily Update #' + str(DAILY_TOTAL))
+                    + '[ ' + curr_time + ' CST]')
     try:
         if 90 < curr_occupancy <= 95:
             api.update_status('Nope! But close to full, hurry over! ' 
@@ -71,8 +85,11 @@ def handleUpdates(api, curr_occupancy, DAILY_TOTAL):
         print(e.reason)
 
 
-# Function selects a gif to post with daily open tweet
-# RETURN: Path to file (gif) in string format
+# Function selects a gif to post with daily close tweet
+# Populates OPEN_NAMES list with names of files (names stored
+# in environment variables in the format: name1,name2,name3,...)
+#  Uses random generator to select a gif from the list.
+# RETURN: filename of gif to use
 def openFileName():
     name_list = config('OPEN_NAMES').split(',')
     for name in name_list:
@@ -87,12 +104,16 @@ def handleOpenUpdate(api):
         api.update_with_media(filename=path_to_file, 
                         status='The Nick is open! Day #' 
                         + str(getDay(FILE_NAME)) + ' \U0001F64C')
-        print('Open update successful!')
-    except tweepy.TweepError:
-        print('Error with open update')
+        print('Open Tweet successful!')
+    except tweepy.TweepError as e:
+        print('Error with open Tweet')
+        print(e.reason)
 
 # Function selects a gif to post with daily close tweet
-# RETURN: Path to file (gif) in string format
+# Populates CLOSED_NAMES list with names of files (names stored
+# in environment variables in the format: name1,name2,name3,...)
+#  Uses random generator to select a gif from the list.
+# RETURN: filename of gif to use
 def closedFileName():
     name_list = config('CLOSED_NAMES').split(',')
     for name in name_list:
@@ -110,8 +131,7 @@ def handleClosedUpdate(api):
         # increment the day counter at close and store
         # into the the file
         storeDay(FILE_NAME, getDay(FILE_NAME) + 1)
-        print('Closed update successful!')
-    except tweepy.TweepError:
-        print('Error with closed update')
-
- 
+        print('Closed Tweet successful!')
+    except tweepy.TweepError as e:
+        print('Error with closed Tweet')
+        print(e.reason)
