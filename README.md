@@ -2,7 +2,7 @@
 
 ## Description
 IsTheNickFull is a Twitter bot that informs users on the current occupancy of The Nick (a recwell center at UW-Madison).
-Due to the building's 25% capacity rule, the building's occupancy usually hovers around 100% with lines out the dorr
+Due to the building's 25% capacity rule, the building's occupancy usually hovers around 100% with lines out the door
 and it can be frustrating to constantly check the facility's live usage since it's always at 100% (so it seems). 
 This bot aims to automate that process of checking the facility's usage and notify users when the building has an acceptable
 amount of users.
@@ -56,8 +56,8 @@ Push to Docker Hub
 ```
 docker push [NAME_OF_IMAGE]:latest
 ```
-Create a Resource Group and ACI Context\n
-For more info: [Deploying Docker Containers on Azure](https://docs.docker.com/cloud/aci-integration/)\n
+Create a Resource Group and ACI Context <br>
+For more info: [Deploying Docker Containers on Azure](https://docs.docker.com/cloud/aci-integration/)<br>
 Then
 ```
 docker run --env-file .env --restart=on-failure --name="[NAME_OF_CONTAINER]" IMAGE
