@@ -9,15 +9,6 @@ amount of users.
 
 Check it out on Twitter: [@IsTheNickFull](https://twitter.com/IsTheNickFull)
 
-## Languages/Technologies 
-* [Azure](https://azure.microsoft.com/en-us/)
-* [Docker](https://www.docker.com/)
-* [Python](https://www.python.org/)
-## Libraries
-* [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
-* [Selenium](https://selenium-python.readthedocs.io/)
-* [Tweepy](https://www.tweepy.org/) 
-
 ## Current Features
 * Tweets out an opening/closing status at the open/close hours
 * Only operates during open/close hours (special response for mentions outside
@@ -35,17 +26,14 @@ Check it out on Twitter: [@IsTheNickFull](https://twitter.com/IsTheNickFull)
    * Notify users that the service is down if mentioned and source sites are down
 * Updates profile name and bio at the open/close hours
 
-## Environment Variables
-How the .env file is structured
-
-```
-consumer_key=[TWITTER_API_KEY]
-consumer_secret=[TWITTER_API_KEY_SECRET]
-access_token=[TWITTER_ACCESS_TOKEN]
-access_token_secret=[TWITTER_ACCESS_TOKEN_SECRET]
-
-other variables...
-```
+## Languages/Technologies 
+* [Azure](https://azure.microsoft.com/en-us/)
+* [Docker](https://www.docker.com/)
+* [Python](https://www.python.org/)
+## Libraries
+* [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+* [Selenium](https://selenium-python.readthedocs.io/)
+* [Tweepy](https://www.tweepy.org/) 
 
 ## Deploying to Azure
 Build the image
@@ -57,11 +45,34 @@ Push to Docker Hub
 docker push [NAME_OF_IMAGE]:latest
 ```
 Create a Resource Group and ACI Context <br>
-For more info: [Deploying Docker Containers on Azure](https://docs.docker.com/cloud/aci-integration/)<br>
+For more info: [Deploying Docker Containers on Azure](https://docs.docker.com/cloud/aci-integration/)<br><br>
 Then
 ```
 docker run --env-file .env --restart=on-failure --name="[NAME_OF_CONTAINER]" IMAGE
 ```
 Done! 
+
+## Some Notes...
+### recwell_bot.py
+Contains infinite loop which controls
+bot functionality
+### Environment Variables
+How the .env file is structured
+
+```
+consumer_key=[TWITTER_API_KEY]
+consumer_secret=[TWITTER_API_KEY_SECRET]
+access_token=[TWITTER_ACCESS_TOKEN]
+access_token_secret=[TWITTER_ACCESS_TOKEN_SECRET]
+
+other variables...
+```
+### var/
+Contains:
+* last_id.txt
+  * Holds the ID # of the last seen mention
+* curr_day.txt
+  * Holds the current day (incremented at close)  
+
 ## Author
 [Ethan Lim](http://www.ethan-lim.com)
