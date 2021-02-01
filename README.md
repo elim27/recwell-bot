@@ -9,10 +9,14 @@ amount of users.
 
 Check it out on Twitter: [@IsTheNickFull](https://twitter.com/IsTheNickFull)
 
-It is built with [Python](https://www.python.org/) and uses the
-[Tweepy](https://www.tweepy.org/) library to access the Twitter API and the [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
-library for web scraping. [Selenium](https://selenium-python.readthedocs.io/) is also used to drive a back up site and scrape info to calculate occupancy
-but isn't used unless the main source site is down (which happens somewhat frequently) becuase the data is not always up to date.
+## Languages/Technologies 
+* [Azure](https://azure.microsoft.com/en-us/)
+* [Docker](https://www.docker.com/)
+* [Python](https://www.python.org/)
+## Libraries
+* [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+* [Selenium](https://selenium-python.readthedocs.io/)
+* [Tweepy](https://www.tweepy.org/) 
 
 ## Current Features
 * Tweets out an opening/closing status at the open/close hours
@@ -52,8 +56,8 @@ Push to Docker Hub
 ```
 docker push [NAME_OF_IMAGE]:latest
 ```
-Create a Resource Group and ACI Context
-For more info: [Deploying Docker Containers on Azure](https://docs.docker.com/cloud/aci-integration/)
+Create a Resource Group and ACI Context\n
+For more info: [Deploying Docker Containers on Azure](https://docs.docker.com/cloud/aci-integration/)\n
 Then
 ```
 docker run --env-file .env --restart=on-failure --name="[NAME_OF_CONTAINER]" IMAGE
