@@ -69,6 +69,9 @@ other variables...
 ```
 ### var/
 Contains:
+* /logs/
+  * scrapes.log
+  * handlers.log
 * last_id.txt
   * Holds the ID # of the last seen mention
 * curr_day.txt
