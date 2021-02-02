@@ -48,7 +48,7 @@ Create a Resource Group and ACI Context <br>
 For more info: [Deploying Docker Containers on Azure](https://docs.docker.com/cloud/aci-integration/)<br><br>
 Then
 ```
-docker run --env-file .env --restart=on-failure --name="[NAME_OF_CONTAINER]" IMAGE
+docker compose up
 ```
 Done! 
 
