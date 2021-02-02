@@ -1,0 +1,31 @@
+version: '3'
+
+networks:
+    net:
+      external: true
+      driver: bridge
+
+services:
+    chrome:
+        image: selenium/standalone-chrome:latest
+        hostname: chrome
+        networks:
+          - net
+        ports:
+          - 4444:4444
+        shm_size: 2g
+    bot:
+        image: ${BOT_IMAGE}
+        container_name: bot-v2
+        networks:
+          - net
+        depends_on: 
+          - chrome
+        env_file: 
+          - .env
+        restart: "no"
+          deploy:
+          resources:
+            limits:
+              cpus: '2'
+              memory: 2g
