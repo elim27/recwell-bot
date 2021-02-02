@@ -1,21 +1,24 @@
-import tweepy
-import time
+
 import pytz
-from enum import Enum
+import time
+import tweepy
 from datetime import datetime
 from decouple import config
-from update_handler import handleUpdates, handleClosedUpdate, handleOpenUpdate
-from profile_handler import handleClosedProfile, handleOpenProfile
+from enum import Enum
+########## from /src ##########
+from update_handler import handleUpdates, handleDailyUpdates
+from profile_handler import handleProfile
 from mentions_handler import handleMentions
 from recwell_scrape import checkOccupancy
 
-########## Authentication ##########
+########## AUTHENTICATION ##########
 auth = tweepy.OAuthHandler(config('consumer_key', default='cricket_sunday'), config('consumer_secret', default='yello_cactus'))
 auth.set_access_token(config('access_token', default='blonde_penguin'), config('access_token_secret', default='happy_harpy'))
 
 api = tweepy.API(auth)
+########## END OF AUTHENTICATION ##########
 
-
+########## HOURS OF OPERATIONS ENUMS ##########
 # Enumerators containing the respective opening hours
 # in 24 hour time (no leading 0) Used Enums for
 # readability
@@ -26,40 +29,45 @@ class Opening(Enum):
     Wednesday = 6
     Thursday = 6
     Friday = 6
-    Saturday = 10
-    Sunday = 10
+    Saturday = 8
+    Sunday = 8
 
 # Enumerators containing the respective closing hours
 # in 24 hour time (no leading 0). Used Enums for
 # readability
 # Spring 2021 schedule
 class Closing(Enum):    
-    Monday = 20
-    Tuesday = 20
-    Wednesday = 20
-    Thursday = 20
+    Monday = 22
+    Tuesday = 22
+    Wednesday = 22
+    Thursday = 22
     Friday = 20
     Saturday = 18
-    Sunday = 18
+    Sunday = 22
+########## END OF HOURS OF OPERATIONS ENUMS ##########
 
-# GLOBAL VARS
+################### GLOBAL VARS ####################
 # IS_OPEN: True if operating during Open Hours, False otherwise
 # REST: Duration of sleep (15s)
-# TWEET_LIMITER: Limits the Tweet rate to 1 Tweet / 10 minutes
-#               If under threshold
 # UPDATED_OPEN: True if profile has been updated to open
 #               default is True to prevent unwanted updates
 #               when redeploying/restarting container
 # UPDATED_CLOSE: True if profile has been updated to close
 #               default is True to prevent unwanted updates
 #               when redploying/restarting container
-
-IS_OPEN = None
-UPDATED_OPEN = False
-UPDATED_CLOSE = False
+IS_OPEN = True
 REST = 15
-TWEET_LIMITER =  4 * 10
+UPDATED_OPEN = True
+UPDATED_CLOSE = False
 
+
+# TWEET_LIMITER: Limits the Tweet rate to 1 Tweet / 10 minutes
+#               If under threshold
+# NAPTIME: Counter that increases by 1 every 15s (NAPTIME = 4 
+#               means 1 min). Reset to 0 everytime there is a status update
+#               Initially = to TWEET_LIMITER so initial tweet is pushed
+TWEET_LIMITER =  4 * 25
+NAPTIME = 4 * 25
 
 # OPENING_HOURS: List of Enum values that correspond to opening hours
 # CLOSING_HOURS: List of Enum values that correspond to closing hours
@@ -81,6 +89,7 @@ CLOSING_HOURS = [
                 Closing.Saturday.value,
                 Closing.Sunday.value
                 ]
+################### END OF GLOBAL VARS ####################
 
 # Function that gets the current 24 hour and returns it as an integer
 # i.e. 6 AM = 6, 12 PM = 12, 5 PM = 17, 12 AM = 00
@@ -103,65 +112,62 @@ def getCurrDay():
     return int(curr_day)
 
 # Function that setups globals for open hours and updates the
-# profile to convey The Nick is open (only updates profile once)
+# profile and pushes a status to convey The Nick is open 
+# (only tweets/updates profile once)
 def openSetup():
     global IS_OPEN, UPDATED_OPEN, UPDATED_CLOSE
     IS_OPEN = True
     if not UPDATED_OPEN:
         # Tweet an Open status and
         # change profile to Open
-        handleOpenUpdate(api)
-        handleOpenProfile(api)
+        handleDailyUpdates(api, IS_OPEN)
+        handleProfile(api, IS_OPEN)
         UPDATED_OPEN = True
         UPDATED_CLOSE = False # reset for close update later
 
 # Function that setups globals for close hours and updates the
-# profile to convey The Nick is closed (only updates profile once)
+# profile and pushes a status to convey The Nick is closed 
+# (only tweets/updates profile once)
 def closedSetup():
     global IS_OPEN, UPDATED_OPEN, UPDATED_CLOSE
     IS_OPEN = False
     if not UPDATED_CLOSE:
+        handleDailyUpdates(api, IS_OPEN)
+        handleProfile(api, IS_OPEN)
         UPDATED_CLOSE = True
         UPDATED_OPEN = False # reset for open update later
-        handleClosedUpdate(api)
-        handleClosedProfile(api)
 
-# This loop will control when the bot updates statuses, creates favorites, etc. by
-# calling the appropriate functions at the appropriate rate. 
-# Checks mentions every 15s, Tweets new status every 10 min (unless capacity is >= 95)
-
+########## CONTROL LOOP ##########
+# This loop will control when the bot updates statuses, creates favorites, etc.
+# BY calling the appropriate functions at the appropriate rate. 
+# Checks mentions every 15s, Tweets new status every 10 min 
+#               (unless capacity is >= 95)
 #       Endpoint       | Rate limit window | Rate limit per user
 # POST statuses/update |       3 hours     |        300
-
 # POST favorites/create|       3 hours     |        1000
 # 900 requests / 15 Minutes
-#
 # More rate limits: https://developer.twitter.com/en/docs/twitter-api/v1/rate-limits
-#
-update_naptime = 0
 while True:
     try:
         curr_hour = getCurrHour()
         curr_day = getCurrDay()
-
-        # Operates normally during The Nick's open and close hours
-        if OPENING_HOURS[curr_day] <= curr_hour < CLOSING_HOURS[curr_day]:
+       
+       # Setup is called at open/close hours:
+        if curr_hour == OPENING_HOURS[curr_day]:
             openSetup()
-            curr_occupancy = checkOccupancy()
-            update_naptime += 1
-    
-            # if occupancy is under threshold (95%) and no erro (-1) and it has 
-            # been more than 10 minutes since last Tweet -> Push Tweet
-            if 0 <= curr_occupancy <= 95 and update_naptime >= TWEET_LIMITER:
-                update_naptime = 0
-                handleUpdates(api, curr_occupancy)
-
-            handleMentions(api, curr_occupancy, IS_OPEN)
-        # If outside of open hours, will not post new updates and
-        # responds to mentions with special response
-        else:
+        elif curr_hour == CLOSING_HOURS[curr_day]:
             closedSetup()
-            handleMentions(api, 0, IS_OPEN)
+        
+        # Checks if the current hour is within open hours for the
+        # current day. Pushes an update ~25 minutes 
+        if OPENING_HOURS[curr_day] <= curr_hour < CLOSING_HOURS[curr_day]:
+            NAPTIME += 1   
+            # if it has been more than 25 minutes since last Tweet -> Push Tweet
+            if NAPTIME >= TWEET_LIMITER:
+                NAPTIME = 0
+                handleUpdates(api)
+
+        handleMentions(api, IS_OPEN)
         time.sleep(REST)
     except tweepy.RateLimitError:
         print('Rate Limit Exceeded')
