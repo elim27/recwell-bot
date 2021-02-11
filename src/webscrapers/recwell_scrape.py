@@ -3,7 +3,7 @@ import re
 import requests
 import time
 from bs4 import BeautifulSoup
-from backup_scrape import checkBackup
+from webscrapers.backup_scrape import checkBackup
 
 # Global Vars
 # URL: source for web scraping
