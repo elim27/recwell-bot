@@ -21,14 +21,15 @@ def handleProfile(api, IS_OPEN):
             open_closed_indicator = 'CLOSED \U0001F4A4'
             name_emoji = '\U0001F634' # sleeping face
         
-        new_description = ('The Nick is currently ' + open_closed_indicator 
-                        + ' I tweet out the current occupancy of The Nick ' 
-                        + 'in 25 minute cycles \U000023F0 Mention me with '
+        new_description = (open_closed_indicator + ' '
+                        + 'I tweet out the current occupancy of The Nick ' 
+                        + 'every 25 minutes \U0001F501 Tweet @ me with '
                         + '#full for a live response \U0001F60E')
         api.update_profile(name='is the nick full ? ' + name_emoji,
                         description=new_description)
         logging.info('Profile updated successfully!')
     except tweepy.TweepError:
         logging.error('Error, profile update FAILED!')
+        print('Error profile update failed.')
         
 

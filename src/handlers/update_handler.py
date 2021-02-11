@@ -83,8 +83,8 @@ def handleUpdates(api):
     
         # Notify users the data may not be completely accurate
         if backup_data:
-            curr_percent += ('\n NOTE: Recwell Services down, using backup '
-                            + 'data... Results may not be up to date!')
+            curr_percent += ('\nNOTE: Recwell Services down, using backup '
+                            + 'data... Percentage is an estimation!')
         # Handle error case (where curr_occupancy is -1)
         # Notifies followers that the bot encountered an issue when
         # scraping for data and will "sleep" until the sites are back up
@@ -102,28 +102,31 @@ def handleUpdates(api):
         # Extreme occupancy
         elif 90 < curr_occupancy <= 99:
             api.update_status('Nope! But close to full, hurry over! ' 
-                            + '\U0000231B\n' + curr_percent)
+                            + '\U000023F3\n' + curr_percent)
         # High occupancy
-        elif 85 < curr_occupancy <= 90:
+        elif 80 < curr_occupancy <= 90:
                 api.update_status('Nope! There are still some spots left\n'
                                 + curr_percent)
         # Medium occupancy
-        elif 80 < curr_occupancy <= 85:
-            api.update_status('Nope! This would be a decent time to go \U0001F440\n'
-                            + curr_percent)
-        # Moderate occupancy
         elif 70 < curr_occupancy <= 80:
-            api.update_status('Nope! This would be an excellent time to go '
-                            + '\U0001F3C6\n' + curr_percent)
+            api.update_status('Nope! Head on over \U0001F3C3\n'
+                            + curr_percent)
         # Nice occupancy
         elif curr_occupancy == 69:
             api.update_status('Nice. \U0001F60E\n' + curr_percent)
+        # Moderate occupancy
+        elif 50 < curr_occupancy <= 70:
+            api.update_status('Nope! This would be an excellent time to go '
+                            + '\U0001F3C6\n' + curr_percent)    
         # Low occupancy
-        elif 0 <= curr_occupancy <= 70:
-            api.update_status('Nope! Head on over! '
-                            + '\U0001F3C3\n' + curr_percent)
+        elif 0 <= curr_occupancy <= 50:
+            api.update_status('Nope! The Nick is practically all yours! '
+                            + '\U0001F440\n' + curr_percent)
         LAST_PERCENT = curr_occupancy
         logging.info("Status update successful! " + curr_percent)  
+    except tweepy.TweepError as e:
+        logging.error('TweepyError in Updates')
+        logging.error(e.reason)
     except Exception as e:
         logging.error('Error, tweeting updates...')
         logging.error(e)
@@ -173,5 +176,6 @@ def handleDailyUpdates(api, IS_OPEN):
             storeDay(FILE_NAME, getDay(FILE_NAME) + 1)
         logging.info('Daily Tweet Successful!')
     except Exception as e:
+        print('Error posting Daily Tweet')
         logging.error('Error posting Daily Tweet.')
         logging.error(e)

@@ -1,18 +1,20 @@
 import logging
 import tweepy
-from decouple import config
 from webscrapers.recwell_scrape import checkOccupancy
+from decouple import config
+
 FILE_NAME = config('FILE_PATH_ID', cast=str)
 SCREEN_NAME = config('SCREEN_NAME')
 BANNED_WORDS = []
 SEEN_IDS = []
 
-
+# Setup logging
 logging.basicConfig(filename='/var/log/handlers.log', 
                     filemode='a', 
                     datefmt='%H:%M:%S',
                     level=logging.INFO
 )
+
 # Function initializes BANNED_WORDS dictionary from words defined
 # in .env
 def setupBannedWords():
@@ -68,8 +70,8 @@ def fullHandler(api, tweet):
         curr_percent = 'Current Occupancy: ' + str(curr_occupancy) + '%'     
         # Attach notice if curr_occupancy is from backup data
         if backup_data:
-            curr_percent += ('\n NOTE: Recwell Services down, using backup '
-                            + 'data... Results may not be up to date!')
+            curr_percent += ('\nNOTE: Recwell Services down, using backup '
+                            + 'data... Results are an estimation!')
         # At capacity scenario
         if curr_occupancy == 100:
             api.update_status('@' + tweet.user.screen_name + ' Yes. \U0001F614\n'
@@ -137,6 +139,7 @@ def handleMentions(api, open):
         setupBannedWords()
         last_id = getLastID(FILE_NAME)
         # Retrieve mentions  
+        logging.info('Getting mentions..')
         mentions = api.mentions_timeline(last_id, tweet_mode='extended')
         # Responds to tweets from oldest to newest
         for tweet in reversed(mentions):
@@ -162,6 +165,9 @@ def handleMentions(api, open):
                     closedHandler(api, tweet)
             else:
                 logging.info('Tweet ignored')
+    except tweepy.TweepError as e:
+        logging.error('TweepyError in Mentions')
+        logging.error(e.reason)
     except Exception as e:
             logging.info('Error, unable to get mentions')
             logging.info(e)
