@@ -1,4 +1,4 @@
-version: '3'
+version: '2'
 
 networks:
     net:
@@ -13,10 +13,9 @@ services:
           - net
         ports:
           - 4444:4444
-        shm_size: 2g
     bot:
         image: ${BOT_IMAGE}
-        container_name: bot-v2
+        container_name: bot-main
         networks:
           - net
         depends_on: 
@@ -24,8 +23,18 @@ services:
         env_file: 
           - .env
         restart: "no"
-          deploy:
+        volumes:
+          - infodata:/var/info
+        deploy:
           resources:
             limits:
-              cpus: '2'
-              memory: 2g
+              cpus: '0.5'
+              memory: 0.5g
+          
+volumes:
+  infodata:
+    driver: azure_file
+    driver_opts: 
+      share_name: tweet-drivers
+      storage_account_name: infovolume
+
